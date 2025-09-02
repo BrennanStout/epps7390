@@ -1,0 +1,24 @@
+---
+title: "Problem_Set1_Stout"
+author: "Brennan Stout"
+date: "2025-09-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Rewrite Bayes' Law when the two events are independent. How do you interpret this?
+
+$P(A|B) = \frac{P(B|A)P(A)}{P(B)}$
+
+* $P(A|B) =P(A)$
+* $P(B|A) =P(B)$
+
+$P(A|B) = \frac{P(B) \cdot P(A)}{P(B)} = P(A)$
+
+The occurance of A does not impact the occurance of B.
+
+## 2. Using R, re-run the Gibbs sampling fucntion given
+
