@@ -113,7 +113,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="project-function">Project Function</h2>
 <p>The goal for this is to use INLA to model count data over space, using for the midterm a simplified dataset from artic fisheries and modeling for bycatch data. The intent is to use a larger and less clean dataset drawn from the CDC for the final. As such most of this is an examination of R-INLA and how to approach the modeling. <a href="https://www.cdc.gov/brfss/index.html">BRFSS</a></p>
 <p>This dataset includes bycatch data, bathmetry, fish count, and location data.</p>
-<p>Cosandey-Godin, Aurelie, et al.&nbsp;“Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol.&nbsp;72, no. 2, 2015, pp.&nbsp;186–97, https://doi.org/10.1139/cjfas-2014-0159.</p>
 </section>
 <section id="data" class="level2">
 <h2 class="anchored" data-anchor-id="data">Data</h2>
@@ -182,7 +181,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nonspatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.556, Running = 0.282, Post = 0.101, Total = 0.94 
+    Pre = 1.32, Running = 2.06, Post = 0.167, Total = 3.55 
 Fixed effects:
              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 (Intercept) 0.511 0.417     -0.308    0.511      1.330 0.511   0
@@ -215,10 +214,10 @@ Posterior summaries for the linear predictor and the fitted values are computed
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.462, Running = 0.686, Post = 0.201, Total = 1.35 
+    Pre = 0.88, Running = 1.28, Post = 0.347, Total = 2.51 
 Fixed effects:
              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-(Intercept) 0.511 0.417     -0.307    0.511      1.330 0.511   0
+(Intercept) 0.511 0.418     -0.308    0.511      1.330 0.511   0
 duration    0.000 0.000      0.000    0.000      0.000 0.000   0
 Ngillnets   0.017 0.006      0.006    0.017      0.028 0.017   0
 TC.tspp     0.000 0.000      0.000    0.000      0.000 0.000   0
@@ -231,10 +230,10 @@ Random effects:
 Model hyperparameters:
                                             mean       sd 0.025quant 0.5quant
 Precision for the Gaussian observations 2.02e-01 7.00e-03      0.188 2.02e-01
-Precision for ID                        2.22e+04 2.51e+04   1447.829 1.43e+04
+Precision for ID                        2.21e+04 2.47e+04   1462.361 1.44e+04
                                         0.975quant     mode
-Precision for the Gaussian observations   2.16e-01    0.202
-Precision for ID                          8.87e+04 3923.740
+Precision for the Gaussian observations   2.16e-01    0.201
+Precision for ID                          8.78e+04 3974.550
 
 Marginal log-Likelihood:  -3703.54 
  is computed 
@@ -301,8 +300,12 @@ Attaching package: 'magrittr'</code></pre>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"ID"</span>, <span class="st">"iid"</span>, <span class="st">"gaussian"</span>,</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                        data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "Losing TC.tspp"
-[1] "Run 2"</code></pre>
+<pre><code>
+ *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
+[1] "Losing duration"
+[1] "Run 2"
+[1] "Losing bathymetry"
+[1] "Run 3"</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>fin_cov <span class="ot">&lt;-</span> Mod_Sel<span class="sc">$</span>Removed[[<span class="fu">length</span>(Mod_Sel<span class="sc">$</span>Removed)]]</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>form_3 <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(<span class="st">"y"</span>, <span class="st">"~"</span>,</span>
@@ -317,13 +320,12 @@ Attaching package: 'magrittr'</code></pre>
 <span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.371, Running = 0.746, Post = 0.146, Total = 1.26 
+    Pre = 0.763, Running = 1.22, Post = 0.328, Total = 2.31 
 Fixed effects:
              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-(Intercept) 0.677 0.420     -0.147    0.677      1.501 0.677   0
-duration    0.000 0.000      0.000    0.000      0.000 0.000   0
-Ngillnets   0.008 0.005     -0.003    0.008      0.018 0.008   0
-bathymetry  0.000 0.000      0.000    0.000      0.001 0.000   0
+(Intercept) 0.209 0.238     -0.257    0.209      0.675 0.209   0
+Ngillnets   0.018 0.005      0.007    0.018      0.028 0.018   0
+TC.tspp     0.000 0.000      0.000    0.000      0.000 0.000   0
 
 Random effects:
   Name    Model
@@ -331,17 +333,17 @@ Random effects:
 
 Model hyperparameters:
                                             mean       sd 0.025quant 0.5quant
-Precision for the Gaussian observations 2.18e+04 2.26e+04   1676.714 1.49e+04
-Precision for ID                        1.98e-01 7.00e-03      0.185 1.98e-01
+Precision for the Gaussian observations 2.02e-01 7.00e-03      0.188 2.02e-01
+Precision for ID                        2.21e+04 2.47e+04   1463.653 1.44e+04
                                         0.975quant     mode
-Precision for the Gaussian observations   8.20e+04 4685.639
-Precision for ID                          2.12e-01    0.198
+Precision for the Gaussian observations   2.16e-01    0.201
+Precision for ID                          8.76e+04 3979.638
 
-Deviance Information Criterion (DIC) ...............: -8849.02
-Deviance Information Criterion (DIC, saturated) ....: 3840.55
-Effective number of parameters .....................: 2199.55
+Deviance Information Criterion (DIC) ...............: 7289.30
+Deviance Information Criterion (DIC, saturated) ....: 1646.15
+Effective number of parameters .....................: 3.91
 
-Marginal log-Likelihood:  -3704.70 
+Marginal log-Likelihood:  -3679.62 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
@@ -398,14 +400,14 @@ Posterior summaries for the linear predictor and the fitted values are computed
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(spatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.911, Running = 0.919, Post = 0.171, Total = 2 
+    Pre = 1.74, Running = 1.73, Post = 0.262, Total = 3.74 
 Fixed effects:
-             mean       sd 0.025quant 0.5quant 0.975quant  mode   kld
-(Intercept) 4.225 1507.754   -949.529    4.220    957.999 4.217 6.922
-duration    0.000    0.000      0.000    0.000      0.000 0.000 0.000
-Ngillnets   0.023    0.004      0.014    0.023      0.031 0.023 0.000
-TC.tspp     0.000    0.000      0.000    0.000      0.000 0.000 0.000
-bathymetry  0.001    0.001      0.000    0.001      0.002 0.001 0.000
+             mean       sd 0.025quant 0.5quant 0.975quant  mode    kld
+(Intercept) 4.237 1746.537  -1218.710    4.232   1227.195 4.229 11.062
+duration    0.000    0.000      0.000    0.000      0.000 0.000  0.000
+Ngillnets   0.023    0.004      0.014    0.023      0.031 0.023  0.000
+TC.tspp     0.000    0.000      0.000    0.000      0.000 0.000  0.000
+bathymetry  0.001    0.001      0.000    0.001      0.002 0.001  0.000
 
 Random effects:
   Name    Model
@@ -413,15 +415,15 @@ Random effects:
 
 Model hyperparameters:
                                           mean    sd 0.025quant 0.5quant
-Precision for the Gaussian observations  0.449 0.016      0.418    0.448
-Theta1 for spatial                       0.544 0.078      0.392    0.543
-Theta2 for spatial                      -6.559 1.242     -9.429   -6.396
+Precision for the Gaussian observations  0.449 0.016      0.417    0.449
+Theta1 for spatial                       0.545 0.078      0.394    0.544
+Theta2 for spatial                      -6.635 1.309     -9.667   -6.460
                                         0.975quant   mode
-Precision for the Gaussian observations      0.482  0.448
-Theta1 for spatial                           0.700  0.540
-Theta2 for spatial                          -4.700 -5.575
+Precision for the Gaussian observations      0.481  0.448
+Theta1 for spatial                           0.701  0.539
+Theta2 for spatial                          -4.694 -5.578
 
-Marginal log-Likelihood:  -3201.20 
+Marginal log-Likelihood:  -3201.17 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
@@ -432,6 +434,9 @@ Posterior summaries for the linear predictor and the fitted values are computed
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ggField(spatial_result, mesh, Groups = 1) +</span></span>
 <span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   scale_fill_brewer(palette = "Reds")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>References: Cosandey-Godin, Aurelie, et al.&nbsp;“Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol.&nbsp;72, no. 2, 2015, pp.&nbsp;186–97, https://doi.org/10.1139/cjfas-2014-0159.</p>
+<p>Main code resource: https://ourcodingclub.github.io/tutorials/inla</p>
+<p>Dataset: https://github.com/GodinA/cjfas-bycatch-INLA-SPDE/tree/master</p>
 </section>
 </section>
 

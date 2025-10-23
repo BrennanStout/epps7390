@@ -19,8 +19,6 @@ As such most of this is an examination of R-INLA and how to approach the modelin
 
 This dataset includes bycatch data, bathmetry, fish count, and location data. 
 
-Cosandey-Godin, Aurelie, et al. “Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the          Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol. 72, no. 2, 2015, pp. 186–97,    https://doi.org/10.1139/cjfas-2014-0159.
-
 
 ## Data
 ```{r}
@@ -131,5 +129,11 @@ summary(spatial_result)
 #   scale_fill_brewer(palette = "Reds")
 ```
 
+References:
+Cosandey-Godin, Aurelie, et al. “Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the          Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol. 72, no. 2, 2015, pp. 186–97,    https://doi.org/10.1139/cjfas-2014-0159.
 
+Main code resource:
+https://ourcodingclub.github.io/tutorials/inla
 
+Dataset:
+https://github.com/GodinA/cjfas-bycatch-INLA-SPDE/tree/master
