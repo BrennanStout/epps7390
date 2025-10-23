@@ -1,0 +1,135 @@
+---
+title: "Midterm Project"
+author: "Brennan Stout"
+format: html
+editor: visual
+---
+
+## Intro: Integrated nested Laplace approximations (INLA)
+Integrated nested Laplace approximation is a deterministic Bayesian model. Much of the 
+use of INLA is to model spatial autocorrelation. Though INLA can be used with a number 
+of functions of varying complexity. 
+
+## Project Function
+The goal for this is to use INLA to model count data over space, using for the 
+midterm a simplified dataset from artic fisheries and modeling for bycatch data.
+The intent is to use a larger and less clean dataset drawn from the CDC for the final.
+As such most of this is an examination of R-INLA and how to approach the modeling.
+[BRFSS](https://www.cdc.gov/brfss/index.html)
+
+This dataset includes bycatch data, bathmetry, fish count, and location data. 
+
+Cosandey-Godin, Aurelie, et al. “Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the          Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol. 72, no. 2, 2015, pp. 186–97,    https://doi.org/10.1139/cjfas-2014-0159.
+
+
+## Data
+```{r}
+# Read the data
+data <- read.csv("https://raw.githubusercontent.com/BrennanStout/epps7390/refs/heads/main/fackdata.csv", header = T)
+covars <- data[,c(4:7)]
+head(data)
+```
+
+
+## Code
+
+### R-INLA
+
+```{r}
+library(INLA); library(sp); library(ggregplot)
+library(sp); library(ggplot2); library(tidyverse)
+
+# Model without random effects
+form_1 <- y ~ duration + Ngillnets + TC.tspp + bathymetry
+
+# Fit the model
+nonspatial_result <- inla(form_1, data = data, family = "gaussian")
+
+# Summary
+summary(nonspatial_result)
+```
+
+```{r}
+
+# Model with random effects
+form_2 <- y ~ duration + Ngillnets + TC.tspp + bathymetry + f(ID, model = 'iid')
+
+# Fit the model
+rand_result <- inla(form_2,
+                    data = data, 
+                    family = "gaussian")
+# Summary
+summary(rand_result)
+```
+
+```{r}
+# Plot load of signigicant effects
+Efxplot(list(nonspatial_result, rand_result))
+```
+
+```{r}
+# Model select
+Mod_Sel <- INLAModelSel("y", c("duration", "Ngillnets", "TC.tspp", "bathymetry"),
+                        "ID", "iid", "gaussian",
+                        data)
+
+fin_cov <- Mod_Sel$Removed[[length(Mod_Sel$Removed)]]
+form_3 <- as.formula(paste0("y", "~",
+                            paste(fin_cov, collapse = "+"),
+                            "+ f(ID, model = 'iid')"))
+# fit model with removed vars                     
+rand_result_1 <- inla(form_3,
+                    data = data, 
+                    family = "gaussian",
+                    control.compute = list(dic = T))
+# Summary
+summary(rand_result_1)
+```
+
+```{r}
+# Create spatial coordinates
+coordinates <- cbind(data$X, data$Y)
+
+# Create mesh for SPDE
+mesh <- inla.mesh.2d(loc = coordinates, max.edge = c(40, 80), cut = 5)
+plot(mesh, asp=1,main=NULL,sub=NULL)
+
+# SPDE model
+spde <- inla.spde2.matern(mesh = mesh)
+
+# Create projector matrix
+A <- inla.spde.make.A(mesh = mesh, loc = coordinates)
+# 
+# Index for spatial field
+spatial_index <- inla.spde.make.index(name = "spatial", n.spde = spde$n.spde)
+
+# Stack 
+stack <- inla.stack(
+  data = list(y = data$y),
+  A = list(A, 1),
+  effects = list(spatial = spatial_index$spatial,
+                 data.frame(duration = data$duration,
+                            Ngillnets = data$Ngillnets,
+                            TC.tspp = data$TC.tspp,
+                            bathymetry = data$bathymetry))
+)
+
+# Define formula including spatial effect
+formula <- y ~ duration + Ngillnets + TC.tspp + bathymetry + f(spatial, model = spde)
+
+# Fit the model
+spatial_result <- inla(formula, data = inla.stack.data(stack),
+               family = "gaussian", control.predictor = list(A = inla.stack.A(stack)))
+
+# Summary
+summary(spatial_result)
+
+# max_range <- 40
+# INLARange(list(spatial_result), MaxRange = max_range, MeshList = mesh)
+
+# ggField(spatial_result, mesh, Groups = 1) +
+#   scale_fill_brewer(palette = "Reds")
+```
+
+
+
