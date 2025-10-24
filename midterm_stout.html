@@ -111,8 +111,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="project-function" class="level2">
 <h2 class="anchored" data-anchor-id="project-function">Project Function</h2>
-<p>The goal for this is to use INLA to model count data over space, using for the midterm a simplified dataset from artic fisheries and modeling for bycatch data. The intent is to use a larger and less clean dataset drawn from the CDC for the final. As such most of this is an examination of R-INLA and how to approach the modeling. <a href="https://www.cdc.gov/brfss/index.html">BRFSS</a></p>
-<p>This dataset includes bycatch data, bathmetry, fish count, and location data.</p>
+<p>The goal for this is to use INLA to model count data over space, using for the midterm a simplified dataset from arctic fisheries in Canada and modeling for bycatch data. The intent is to use a larger and less clean dataset drawn from the CDC for the final or a methodological comparison to build on INLA. As such most of this is an examination of R-INLA and how to approach the modeling. <a href="https://www.cdc.gov/brfss/index.html">BRFSS</a></p>
 </section>
 <section id="data" class="level2">
 <h2 class="anchored" data-anchor-id="data">Data</h2>
@@ -138,50 +137,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 6 67.18333 -58.15000</code></pre>
 </div>
 </div>
+<ul>
+<li><p>Year/Month: Time data</p></li>
+<li><p>y: bycatch data to be modeled</p></li>
+<li><p>duration: ship search time</p></li>
+<li><p>Ngillnets: Number of fishing nets</p></li>
+<li><p>TC.tss: Counts of target species</p></li>
+<li><p>bathymetry: Bathymetric data of the ocean floor</p></li>
+<li><p>X/Y: Location Data</p></li>
+</ul>
 </section>
 <section id="code" class="level2">
 <h2 class="anchored" data-anchor-id="code">Code</h2>
 <section id="r-inla" class="level3">
 <h3 class="anchored" data-anchor-id="r-inla">R-INLA</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(INLA); <span class="fu">library</span>(sp); <span class="fu">library</span>(ggregplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: Matrix</code></pre>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(INLA); <span class="fu">library</span>(sp); <span class="fu">library</span>(ggregplot)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sp); <span class="fu">library</span>(ggplot2); <span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>This is INLA_25.06.07 built 2025-06-11 18:54:45 UTC.
- - See www.r-inla.org/contact-us for how to get help.
- - List available models/likelihoods/etc with inla.list.models()
- - Use inla.doc(&lt;NAME&gt;) to access documentation</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sp); <span class="fu">library</span>(ggplot2); <span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.5
-✔ forcats   1.0.0     ✔ stringr   1.5.1
-✔ lubridate 1.9.4     ✔ tibble    3.3.0
-✔ purrr     1.0.4     ✔ tidyr     1.3.1</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-✖ tidyr::expand() masks Matrix::expand()
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()
-✖ tidyr::pack()   masks Matrix::pack()
-✖ tidyr::unpack() masks Matrix::unpack()
-ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model without random effects</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>form_1 <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>nonspatial_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_1, <span class="at">data =</span> data, <span class="at">family =</span> <span class="st">"gaussian"</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nonspatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model without random effects</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>form_1 <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>nonspatial_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_1, <span class="at">data =</span> data, <span class="at">family =</span> <span class="st">"gaussian"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nonspatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 1.32, Running = 2.06, Post = 0.167, Total = 3.55 
+    Pre = 0.985, Running = 0.592, Post = 0.147, Total = 1.72 
 Fixed effects:
              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 (Intercept) 0.511 0.417     -0.308    0.511      1.330 0.511   0
@@ -202,22 +187,23 @@ Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
 </div>
 </div>
+<p>This model is not a particularly good fit.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model with random effects</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>form_2 <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">'iid'</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>rand_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_2,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data, </span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"gaussian"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model with random effects</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>form_2 <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">'iid'</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>rand_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_2,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data, </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"gaussian"</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.88, Running = 1.28, Post = 0.347, Total = 2.51 
+    Pre = 0.667, Running = 1.18, Post = 0.39, Total = 2.23 
 Fixed effects:
              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-(Intercept) 0.511 0.418     -0.308    0.511      1.330 0.511   0
+(Intercept) 0.511 0.417     -0.307    0.511      1.330 0.511   0
 duration    0.000 0.000      0.000    0.000      0.000 0.000   0
 Ngillnets   0.017 0.006      0.006    0.017      0.028 0.017   0
 TC.tspp     0.000 0.000      0.000    0.000      0.000 0.000   0
@@ -229,103 +215,61 @@ Random effects:
 
 Model hyperparameters:
                                             mean       sd 0.025quant 0.5quant
-Precision for the Gaussian observations 2.02e-01 7.00e-03      0.188 2.02e-01
-Precision for ID                        2.21e+04 2.47e+04   1462.361 1.44e+04
+Precision for the Gaussian observations 2.23e+04 2.61e+04   1317.006 1.40e+04
+Precision for ID                        2.02e-01 7.00e-03      0.188 2.02e-01
                                         0.975quant     mode
-Precision for the Gaussian observations   2.16e-01    0.201
-Precision for ID                          8.78e+04 3974.550
+Precision for the Gaussian observations   9.13e+04 3499.873
+Precision for ID                          2.16e-01    0.202
 
-Marginal log-Likelihood:  -3703.54 
+Marginal log-Likelihood:  -3703.51 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
 </div>
 </div>
+<p>This model is about the same level of poor fit.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot load of signigicant effects</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Efxplot</span>(<span class="fu">list</span>(nonspatial_result, rand_result))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: MCMCglmm</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in library(package, lib.loc = lib.loc, character.only = TRUE,
-logical.return = TRUE, : there is no package called 'MCMCglmm'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: MASS</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'MASS'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following object is masked from 'package:dplyr':
-
-    select</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Loading required package: magrittr</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'magrittr'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following object is masked from 'package:purrr':
-
-    set_names</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following object is masked from 'package:tidyr':
-
-    extract</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
-ℹ Please use `linewidth` instead.
-ℹ The deprecated feature was likely used in the ggregplot package.
-  Please report the issue to the authors.</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot load of significant effects</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Efxplot</span>(<span class="fu">list</span>(nonspatial_result, rand_result))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="midterm_stout_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="midterm_stout_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model select</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>Mod_Sel <span class="ot">&lt;-</span> <span class="fu">INLAModelSel</span>(<span class="st">"y"</span>, <span class="fu">c</span>(<span class="st">"duration"</span>, <span class="st">"Ngillnets"</span>, <span class="st">"TC.tspp"</span>, <span class="st">"bathymetry"</span>),</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"ID"</span>, <span class="st">"iid"</span>, <span class="st">"gaussian"</span>,</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                        data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model select</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>Mod_Sel <span class="ot">&lt;-</span> <span class="fu">INLAModelSel</span>(<span class="st">"y"</span>, <span class="fu">c</span>(<span class="st">"duration"</span>, <span class="st">"Ngillnets"</span>, <span class="st">"TC.tspp"</span>, <span class="st">"bathymetry"</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"ID"</span>, <span class="st">"iid"</span>, <span class="st">"gaussian"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                        data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>
- *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
-[1] "Losing duration"
+<pre><code>[1] "Losing TC.tspp"
 [1] "Run 2"
-[1] "Losing bathymetry"
-[1] "Run 3"</code></pre>
+[1] "Losing Ngillnets"
+[1] "Run 3"
+[1] "Losing duration"
+[1] "Run 4"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>fin_cov <span class="ot">&lt;-</span> Mod_Sel<span class="sc">$</span>Removed[[<span class="fu">length</span>(Mod_Sel<span class="sc">$</span>Removed)]]</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>form_3 <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(<span class="st">"y"</span>, <span class="st">"~"</span>,</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">paste</span>(fin_cov, <span class="at">collapse =</span> <span class="st">"+"</span>),</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"+ f(ID, model = 'iid')"</span>))</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="co"># fit model with removed vars                     </span></span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>rand_result_1 <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_3,</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data, </span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"gaussian"</span>,</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">control.compute =</span> <span class="fu">list</span>(<span class="at">dic =</span> T))</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fin_cov <span class="ot">&lt;-</span> Mod_Sel<span class="sc">$</span>Removed[[<span class="fu">length</span>(Mod_Sel<span class="sc">$</span>Removed)]]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>form_3 <span class="ot">&lt;-</span> <span class="fu">as.formula</span>(<span class="fu">paste0</span>(<span class="st">"y"</span>, <span class="st">"~"</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">paste</span>(fin_cov, <span class="at">collapse =</span> <span class="st">"+"</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"+ f(ID, model = 'iid')"</span>))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># fit model with removed vars                     </span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>rand_result_1 <span class="ot">&lt;-</span> <span class="fu">inla</span>(form_3,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data, </span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"gaussian"</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">control.compute =</span> <span class="fu">list</span>(<span class="at">dic =</span> T))</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rand_result_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 0.763, Running = 1.22, Post = 0.328, Total = 2.31 
+    Pre = 0.572, Running = 1.13, Post = 0.284, Total = 1.99 
 Fixed effects:
-             mean    sd 0.025quant 0.5quant 0.975quant  mode kld
-(Intercept) 0.209 0.238     -0.257    0.209      0.675 0.209   0
-Ngillnets   0.018 0.005      0.007    0.018      0.028 0.018   0
-TC.tspp     0.000 0.000      0.000    0.000      0.000 0.000   0
+             mean  sd 0.025quant 0.5quant 0.975quant  mode kld
+(Intercept) 0.686 0.3      0.097    0.686      1.275 0.686   0
+bathymetry  0.000 0.0      0.000    0.000      0.001 0.000   0
 
 Random effects:
   Name    Model
@@ -333,81 +277,75 @@ Random effects:
 
 Model hyperparameters:
                                             mean       sd 0.025quant 0.5quant
-Precision for the Gaussian observations 2.02e-01 7.00e-03      0.188 2.02e-01
-Precision for ID                        2.21e+04 2.47e+04   1463.653 1.44e+04
+Precision for the Gaussian observations 2.20e+04 2.36e+04   1572.892 1.46e+04
+Precision for ID                        1.98e-01 7.00e-03      0.184 1.97e-01
                                         0.975quant     mode
-Precision for the Gaussian observations   2.16e-01    0.201
-Precision for ID                          8.76e+04 3979.638
+Precision for the Gaussian observations   8.47e+04 4342.599
+Precision for ID                          2.11e-01    0.197
 
-Deviance Information Criterion (DIC) ...............: 7289.30
-Deviance Information Criterion (DIC, saturated) ....: 1646.15
-Effective number of parameters .....................: 3.91
+Deviance Information Criterion (DIC) ...............: -8850.67
+Deviance Information Criterion (DIC, saturated) ....: 3827.11
+Effective number of parameters .....................: 2186.11
 
-Marginal log-Likelihood:  -3679.62 
+Marginal log-Likelihood:  -3686.69 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create spatial coordinates</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>coordinates <span class="ot">&lt;-</span> <span class="fu">cbind</span>(data<span class="sc">$</span>X, data<span class="sc">$</span>Y)</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create mesh for SPDE</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>mesh <span class="ot">&lt;-</span> <span class="fu">inla.mesh.2d</span>(<span class="at">loc =</span> coordinates, <span class="at">max.edge =</span> <span class="fu">c</span>(<span class="dv">40</span>, <span class="dv">80</span>), <span class="at">cut =</span> <span class="dv">5</span>)</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mesh, <span class="at">asp=</span><span class="dv">1</span>,<span class="at">main=</span><span class="cn">NULL</span>,<span class="at">sub=</span><span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create spatial coordinates</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>coordinates <span class="ot">&lt;-</span> <span class="fu">cbind</span>(data<span class="sc">$</span>X, data<span class="sc">$</span>Y)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create mesh for SPDE</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>mesh <span class="ot">&lt;-</span> <span class="fu">inla.mesh.2d</span>(<span class="at">loc =</span> coordinates, <span class="at">max.edge =</span> <span class="fu">c</span>(<span class="dv">40</span>, <span class="dv">80</span>), <span class="at">cut =</span> <span class="dv">5</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mesh, <span class="at">asp=</span><span class="dv">1</span>,<span class="at">main=</span><span class="cn">NULL</span>,<span class="at">sub=</span><span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="midterm_stout_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="midterm_stout_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SPDE model</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>spde <span class="ot">&lt;-</span> <span class="fu">inla.spde2.matern</span>(<span class="at">mesh =</span> mesh)</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create projector matrix</span></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">inla.spde.make.A</span>(<span class="at">mesh =</span> mesh, <span class="at">loc =</span> coordinates)</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Index for spatial field</span></span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>spatial_index <span class="ot">&lt;-</span> <span class="fu">inla.spde.make.index</span>(<span class="at">name =</span> <span class="st">"spatial"</span>, <span class="at">n.spde =</span> spde<span class="sc">$</span>n.spde)</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack </span></span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> <span class="fu">inla.stack</span>(</span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> data<span class="sc">$</span>y),</span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">A =</span> <span class="fu">list</span>(A, <span class="dv">1</span>),</span>
-<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">effects =</span> <span class="fu">list</span>(<span class="at">spatial =</span> spatial_index<span class="sc">$</span>spatial,</span>
-<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">data.frame</span>(<span class="at">duration =</span> data<span class="sc">$</span>duration,</span>
-<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Ngillnets =</span> data<span class="sc">$</span>Ngillnets,</span>
-<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">TC.tspp =</span> data<span class="sc">$</span>TC.tspp,</span>
-<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">bathymetry =</span> data<span class="sc">$</span>bathymetry))</span>
-<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Define formula including spatial effect</span></span>
-<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>formula <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry <span class="sc">+</span> <span class="fu">f</span>(spatial, <span class="at">model =</span> spde)</span>
-<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
-<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>spatial_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(formula, <span class="at">data =</span> <span class="fu">inla.stack.data</span>(stack),</span>
-<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a>               <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">A =</span> <span class="fu">inla.stack.A</span>(stack)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in inla.core(formula = formula, family = family, contrasts = contrasts, : The A-matrix in the predictor (see ?control.predictor) is specified
-  but an intercept is in the formula. This will likely result
-  in the intercept being applied multiple times in the model, and is likely
-  not what you want. See ?inla.stack for more information.
-  You can remove the intercept adding ``-1'' to the formula.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(spatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SPDE model</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>spde <span class="ot">&lt;-</span> <span class="fu">inla.spde2.matern</span>(<span class="at">mesh =</span> mesh)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create projector matrix</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">inla.spde.make.A</span>(<span class="at">mesh =</span> mesh, <span class="at">loc =</span> coordinates)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Index for spatial field</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>spatial_index <span class="ot">&lt;-</span> <span class="fu">inla.spde.make.index</span>(<span class="at">name =</span> <span class="st">"spatial"</span>, <span class="at">n.spde =</span> spde<span class="sc">$</span>n.spde)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack </span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> <span class="fu">inla.stack</span>(</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> data<span class="sc">$</span>y),</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">A =</span> <span class="fu">list</span>(A, <span class="dv">1</span>),</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">effects =</span> <span class="fu">list</span>(<span class="at">spatial =</span> spatial_index<span class="sc">$</span>spatial,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">data.frame</span>(<span class="at">duration =</span> data<span class="sc">$</span>duration,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Ngillnets =</span> data<span class="sc">$</span>Ngillnets,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">TC.tspp =</span> data<span class="sc">$</span>TC.tspp,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">bathymetry =</span> data<span class="sc">$</span>bathymetry))</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Define formula including spatial effect</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>formula <span class="ot">&lt;-</span> y <span class="sc">~</span> duration <span class="sc">+</span> Ngillnets <span class="sc">+</span> TC.tspp <span class="sc">+</span> bathymetry <span class="sc">+</span> <span class="fu">f</span>(spatial, <span class="at">model =</span> spde)</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>spatial_result <span class="ot">&lt;-</span> <span class="fu">inla</span>(formula, <span class="at">data =</span> <span class="fu">inla.stack.data</span>(stack),</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>               <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">A =</span> <span class="fu">inla.stack.A</span>(stack)))</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(spatial_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time used:
-    Pre = 1.74, Running = 1.73, Post = 0.262, Total = 3.74 
+    Pre = 1.35, Running = 1.7, Post = 0.253, Total = 3.3 
 Fixed effects:
-             mean       sd 0.025quant 0.5quant 0.975quant  mode    kld
-(Intercept) 4.237 1746.537  -1218.710    4.232   1227.195 4.229 11.062
-duration    0.000    0.000      0.000    0.000      0.000 0.000  0.000
-Ngillnets   0.023    0.004      0.014    0.023      0.031 0.023  0.000
-TC.tspp     0.000    0.000      0.000    0.000      0.000 0.000  0.000
-bathymetry  0.001    0.001      0.000    0.001      0.002 0.001  0.000
+             mean       sd 0.025quant 0.5quant 0.975quant  mode   kld
+(Intercept) 4.224 1000.870   -567.548    4.217    576.034 4.212 3.195
+duration    0.000    0.000      0.000    0.000      0.000 0.000 0.000
+Ngillnets   0.023    0.004      0.014    0.023      0.031 0.023 0.000
+TC.tspp     0.000    0.000      0.000    0.000      0.000 0.000 0.000
+bathymetry  0.001    0.001      0.000    0.001      0.002 0.001 0.000
 
 Random effects:
   Name    Model
@@ -415,25 +353,21 @@ Random effects:
 
 Model hyperparameters:
                                           mean    sd 0.025quant 0.5quant
-Precision for the Gaussian observations  0.449 0.016      0.417    0.449
-Theta1 for spatial                       0.545 0.078      0.394    0.544
-Theta2 for spatial                      -6.635 1.309     -9.667   -6.460
+Precision for the Gaussian observations  0.449 0.016      0.417    0.448
+Theta1 for spatial                       0.543 0.078      0.392    0.541
+Theta2 for spatial                      -6.376 1.125     -8.984   -6.224
                                         0.975quant   mode
 Precision for the Gaussian observations      0.481  0.448
-Theta1 for spatial                           0.701  0.539
-Theta2 for spatial                          -4.694 -5.578
+Theta1 for spatial                           0.700  0.536
+Theta2 for spatial                          -4.712 -5.462
 
-Marginal log-Likelihood:  -3201.17 
+Marginal log-Likelihood:  -3201.33 
  is computed 
 Posterior summaries for the linear predictor and the fitted values are computed
 (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># max_range &lt;- 40</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="co"># INLARange(list(spatial_result), MaxRange = max_range, MeshList = mesh)</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ggField(spatial_result, mesh, Groups = 1) +</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   scale_fill_brewer(palette = "Reds")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>This model has a much improved fit from the spatial component.</p>
 <p>References: Cosandey-Godin, Aurelie, et al.&nbsp;“Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol.&nbsp;72, no. 2, 2015, pp.&nbsp;186–97, https://doi.org/10.1139/cjfas-2014-0159.</p>
 <p>Main code resource: https://ourcodingclub.github.io/tutorials/inla</p>
 <p>Dataset: https://github.com/GodinA/cjfas-bycatch-INLA-SPDE/tree/master</p>

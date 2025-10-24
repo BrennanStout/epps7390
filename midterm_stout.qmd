@@ -6,21 +6,15 @@ editor: visual
 ---
 
 ## Intro: Integrated nested Laplace approximations (INLA)
-Integrated nested Laplace approximation is a deterministic Bayesian model. Much of the 
-use of INLA is to model spatial autocorrelation. Though INLA can be used with a number 
-of functions of varying complexity. 
+
+Integrated nested Laplace approximation is a deterministic Bayesian model. Much of the use of INLA is to model spatial autocorrelation. Though INLA can be used with a number of functions of varying complexity.
 
 ## Project Function
-The goal for this is to use INLA to model count data over space, using for the 
-midterm a simplified dataset from artic fisheries and modeling for bycatch data.
-The intent is to use a larger and less clean dataset drawn from the CDC for the final.
-As such most of this is an examination of R-INLA and how to approach the modeling.
-[BRFSS](https://www.cdc.gov/brfss/index.html)
 
-This dataset includes bycatch data, bathmetry, fish count, and location data. 
-
+The goal for this is to use INLA to model count data over space, using for the midterm a simplified dataset from arctic fisheries in Canada and modeling for bycatch data. The intent is to use a larger and less clean dataset drawn from the CDC for the final or a methodological comparison to build on INLA. As such most of this is an examination of R-INLA and how to approach the modeling. [BRFSS](https://www.cdc.gov/brfss/index.html)
 
 ## Data
+
 ```{r}
 # Read the data
 data <- read.csv("https://raw.githubusercontent.com/BrennanStout/epps7390/refs/heads/main/fackdata.csv", header = T)
@@ -28,15 +22,32 @@ covars <- data[,c(4:7)]
 head(data)
 ```
 
+-   Year/Month: Time data
+
+-   y: bycatch data to be modeled
+
+-   duration: ship search time
+
+-   Ngillnets: Number of fishing nets
+
+-   TC.tss: Counts of target species
+
+-   bathymetry: Bathymetric data of the ocean floor
+
+-   X/Y: Location Data
 
 ## Code
 
 ### R-INLA
 
 ```{r}
+#| message: false
+#| warning: false
 library(INLA); library(sp); library(ggregplot)
 library(sp); library(ggplot2); library(tidyverse)
+```
 
+```{r}
 # Model without random effects
 form_1 <- y ~ duration + Ngillnets + TC.tspp + bathymetry
 
@@ -46,6 +57,7 @@ nonspatial_result <- inla(form_1, data = data, family = "gaussian")
 # Summary
 summary(nonspatial_result)
 ```
+This model is not a particularly good fit.
 
 ```{r}
 
@@ -59,9 +71,12 @@ rand_result <- inla(form_2,
 # Summary
 summary(rand_result)
 ```
+This model is about the same level of poor fit.
 
 ```{r}
-# Plot load of signigicant effects
+#| message: false
+#| warning: false
+# Plot load of significant effects
 Efxplot(list(nonspatial_result, rand_result))
 ```
 
@@ -85,6 +100,7 @@ summary(rand_result_1)
 ```
 
 ```{r}
+#| warning: false
 # Create spatial coordinates
 coordinates <- cbind(data$X, data$Y)
 
@@ -121,19 +137,11 @@ spatial_result <- inla(formula, data = inla.stack.data(stack),
 
 # Summary
 summary(spatial_result)
-
-# max_range <- 40
-# INLARange(list(spatial_result), MaxRange = max_range, MeshList = mesh)
-
-# ggField(spatial_result, mesh, Groups = 1) +
-#   scale_fill_brewer(palette = "Reds")
 ```
+This model has a much improved fit from the spatial component.
 
-References:
-Cosandey-Godin, Aurelie, et al. “Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the          Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol. 72, no. 2, 2015, pp. 186–97,    https://doi.org/10.1139/cjfas-2014-0159.
+References: Cosandey-Godin, Aurelie, et al. “Applying Bayesian Spatiotemporal Models to Fisheries Bycatch in the Canadian Arctic.” Canadian Journal of Fisheries and Aquatic Sciences, vol. 72, no. 2, 2015, pp. 186–97, https://doi.org/10.1139/cjfas-2014-0159.
 
-Main code resource:
-https://ourcodingclub.github.io/tutorials/inla
+Main code resource: https://ourcodingclub.github.io/tutorials/inla
 
-Dataset:
-https://github.com/GodinA/cjfas-bycatch-INLA-SPDE/tree/master
+Dataset: https://github.com/GodinA/cjfas-bycatch-INLA-SPDE/tree/master
