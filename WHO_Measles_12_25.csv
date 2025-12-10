@@ -1,8 +1,8 @@
-﻿Region,Country,ISO3,Year,Month,"Measles 
+﻿region,Country,ISO3,year,month,"Measles 
 suspect","Measles 
 clinical","Measles 
 epi-linked","Measles 
-lab-confirmed",Measles_total,"Rubella 
+lab-confirmed",measles_total,"Rubella 
 clinical","Rubella 
 epi-linked","Rubella 
 lab-confirmed","Rubella
